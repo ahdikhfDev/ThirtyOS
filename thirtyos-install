@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  thirtyos-install — ThirtyOS Service Installer CLI
+#  ThirtyOS — By AhdikhfDev
 #  Usage: thirtyos-install [command]
 # ============================================================
 
@@ -24,7 +24,7 @@ show_banner() {
    | | | | | | | |  | |_| || |_| |___) |
    |_| |_| |_|_|_|   \__|_| \___/|____/
 EOF
-    echo -e "${NC}  ${BOLD}thirtyos-install v${VERSION}${NC} — HG680P STB Toolkit"
+    echo -e "${NC}  ${BOLD}ThirtyOS v${VERSION}${NC} — By AhdikhfDev"
     echo ""
 }
 
@@ -570,7 +570,7 @@ cmd_version() {
         echo -e "  Board    : ${THIRTYOS_BOARD}"
         echo -e "  Base     : ${THIRTYOS_BASE}"
     else
-        echo -e "  thirtyos-install v${VERSION}"
+        echo -e "  ThirtyOS v${VERSION}"
     fi
     echo ""
 }
