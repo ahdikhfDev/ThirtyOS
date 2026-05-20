@@ -39,13 +39,19 @@ sudo resize2fs /dev/sdX2
 
 ### Option 2: One-Liner Install (any Armbian/Debian)
 
-If you already have Armbian running on your HG680P:
+If you already have Armbian running on your HG680P, jalankan perintah ini **sekali** untuk download `thirtyos-install`:
 
 ```bash
 sudo curl -fsSL -o /usr/local/bin/thirtyos-install https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS-tools/main/thirtyos-install && sudo chmod +x /usr/local/bin/thirtyos-install
 ```
 
-Then follow the first-boot guide below.
+**Setelah itu**, update ke versi terbaru (biar fitur `ai` dan lainnya siap):
+
+```bash
+thirtyos-install update
+```
+
+Abis update, lanjut ke panduan first boot di bawah.
 
 ---
 
