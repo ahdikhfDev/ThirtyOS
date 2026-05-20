@@ -452,6 +452,15 @@ cmd_update() {
         -o /usr/local/bin/thirtyos-install && chmod +x /usr/local/bin/thirtyos-install
     log "thirtyos-install terupdate"
 
+    info "Aktifkan MOTD di SSH..."
+    if grep -q "^PrintMotd no" /etc/ssh/sshd_config; then
+        sed -i 's/^PrintMotd no/PrintMotd yes/' /etc/ssh/sshd_config
+        systemctl restart sshd 2>/dev/null || systemctl restart ssh 2>/dev/null || true
+        log "PrintMotd diaktifkan"
+    else
+        log "PrintMotd sudah aktif"
+    fi
+
     info "Update MOTD banner..."
     cat > /etc/update-motd.d/00-thirtyos << 'MOTD'
 #!/bin/bash

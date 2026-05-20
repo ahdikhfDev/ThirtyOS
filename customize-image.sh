@@ -199,6 +199,12 @@ echo ""
 MOTD
 chmod +x /etc/update-motd.d/00-thirtyos
 
+# Aktifkan PrintMotd di SSH
+if grep -q "^PrintMotd no" /etc/ssh/sshd_config; then
+    sed -i 's/^PrintMotd no/PrintMotd yes/' /etc/ssh/sshd_config
+    echo "PrintMotd diaktifkan"
+fi
+
 echo "--- Buat file versi ThirtyOS ---"
 cat > /etc/thirtyos-release << RELEASE
 THIRTYOS_VERSION="1.0.0"
