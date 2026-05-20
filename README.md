@@ -109,7 +109,19 @@ thirtyos-install retro        # RetroArch
 
 ## 🔄 Updating
 
-### Update ThirtyOS system & tools
+### Manual Update (for existing installations)
+
+If you're running ThirtyOS **v1.0.0** (before auto-update was built-in),
+run this **once** to upgrade `thirtyos-install`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS-tools/main/thirtyos-install \
+    -o /usr/local/bin/thirtyos-install && chmod +x /usr/local/bin/thirtyos-install
+```
+
+After this, future updates are automatic.
+
+### Auto Update (for v1.0.1+)
 
 ```bash
 thirtyos-install update
