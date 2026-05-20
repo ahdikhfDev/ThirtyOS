@@ -28,6 +28,7 @@ Built for lightweight server use: bots, tunnels, media servers, retro emulation,
 | `tunnel` | Setup Cloudflare Tunnel |
 | `panel` | Install CasaOS or Portainer |
 | `media` | Install Homeflix media server |
+| `ai` | AI stack: 9Router + OpenCode headless ($0/month) |
 | `retro` | Install RetroArch + emulator cores |
 | `update` | Full system + tool update |
 | `status` | Show system & service status |
@@ -98,6 +99,7 @@ thirtyos-install prepare
 thirtyos-install optimize
 
 # 4. Install services you need
+thirtyos-install ai setup      # AI stack (9Router + OpenCode)
 thirtyos-install bot-wa       # WhatsApp bot
 thirtyos-install tunnel       # Cloudflare tunnel
 thirtyos-install panel        # CasaOS / Portainer
@@ -162,6 +164,67 @@ Then on your STB:
 ```bash
 thirtyos-install update
 ```
+
+---
+
+## 🤖 AI Stack — $0/month
+
+ThirtyOS integrates **9Router** + **OpenCode** for a free, headless AI coding assistant.
+
+### Architecture
+
+```
+Laptop/Phone
+    ↓ Cloudflare Tunnel or SSH
+STB ThirtyOS
+    ├── OpenCode (headless CLI/API)
+    │       ↓ localhost:20128/v1
+    └── 9Router (AI Gateway)
+            ↓
+    ┌──────────────────────────┐
+    │ Kiro AI (Claude 4.5)     │ ← unlimited free
+    │ OpenCode Free            │ ← no auth needed
+    │ iFlow                    │ ← no auth needed
+    │ Qwen                     │ ← no auth needed
+    └──────────────────────────┘
+```
+
+### Setup
+
+```bash
+# Install everything at once
+thirtyos-install ai setup
+```
+
+This installs:
+- **9Router** — local AI gateway with auto-fallback across free providers
+- **OpenCode** — headless AI coding agent
+- **systemd service** — 9Router auto-starts on boot
+- **RTK compression** — saves 20-45% tokens on git diffs/logs
+
+### Usage
+
+```bash
+# On STB directly:
+opencode
+
+# From laptop via SSH tunnel:
+ssh -L 20128:localhost:20128 thirty@<ip-stb>
+# Open http://localhost:20128/dashboard in browser
+
+# From anywhere via Cloudflare:
+thirtyos-install ai tunnel
+# Then access https://ai.yourdomain.com/dashboard
+```
+
+### Commands
+
+| Subcommand | Description |
+|------------|-------------|
+| `ai setup` | Install & configure 9Router + OpenCode |
+| `ai status` | Show AI services & provider status |
+| `ai update` | Update 9Router & OpenCode to latest |
+| `ai tunnel` | Expose AI dashboard via Cloudflare Tunnel |
 
 ---
 
