@@ -178,13 +178,14 @@ echo "--- Custom MOTD ---"
 rm -f /etc/update-motd.d/*
 cat > /etc/update-motd.d/00-thirtyos << 'MOTD'
 #!/bin/bash
-CYAN='\033[0;36m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; NC='\033[0m'
-echo -e "${CYAN}"
-echo "  _____ _     _      _       ___  ____"
-echo " |_   _| |__ (_)_ __| |_ _  / _ \/ ___|"
-echo "   | | | '_ \\| | '__| __| || | | \\___ \\"
-echo "   | | | | | | | |  | |_| || |_| |___) |"
-echo "   |_| |_| |_|_|_|   \\__|_| \\___/|____/"
+PURPLE='\033[0;35m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; NC='\033[0m'
+echo -e "${PURPLE}"
+echo "  __  __    _      __           ____  _____"
+echo "  / /_/ /_  (_)____/ /_ __  __  / __ \\/ ___/"
+echo " / __/ __ \\/ / ___/ __// / / / / / / /\\__ \\"
+echo "/ /_/ / / / / /  / /_ / /_/ / / /_/ /___/ /"
+echo "\\__/_/ /_/_/_/   \\__/ \\__, /  \\____//____/"
+echo "                     /____/"
 echo -e "${NC}"
 echo -e "${YELLOW}  ThirtyOS v1.0 — Custom Armbian for HG680P${NC}"
 echo -e "${GREEN}  by Thirty | github.com/ahdikhfDev${NC}"
@@ -194,7 +195,7 @@ echo -e "  IP       : $(hostname -I | awk '{print $1}')"
 echo -e "  Uptime   : $(uptime -p)"
 echo -e "  RAM      : $(free -m | awk '/Mem/{printf "%dMB / %dMB", $3, $2}')"
 echo ""
-echo -e "  Jalankan ${CYAN}thirtyos-install${NC} untuk setup layanan."
+echo -e "  Jalankan ${YELLOW}thirtyos-install${NC} untuk setup layanan."
 echo ""
 MOTD
 chmod +x /etc/update-motd.d/00-thirtyos
