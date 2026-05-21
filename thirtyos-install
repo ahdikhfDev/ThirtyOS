@@ -4,7 +4,7 @@
 #  Usage: thirtyos-install [command]
 # ============================================================
 
-VERSION="1.2.1"
+VERSION="1.2.3"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
@@ -44,7 +44,7 @@ show_help() {
     echo -e "    ${GREEN}optimize${NC}   Optimasi sistem (RAM, storage, scheduler)"
     echo -e "    ${GREEN}ai${NC}         Install AI stack (9Router + OpenCode) \$0/bulan"
     echo -e "    ${GREEN}wifi${NC}       Scan & connect WiFi (NMCLI)"
-    echo -e "    ${GREEN}bot-wa${NC}     Install / update WhatsApp bot"
+    echo -e "    ${GREEN}bot-wa${NC}     Install WhatsApp bot + Web Dashboard (port 6789)"
     echo -e "    ${GREEN}tunnel${NC}     Setup Cloudflare Tunnel"
     echo -e "    ${GREEN}panel${NC}      Install web panel (CasaOS / Portainer)"
     echo -e "    ${GREEN}media${NC}      Install Homeflix media server"
@@ -220,9 +220,6 @@ cmd_botwa() {
     git clone --depth=1 "$BOT_REPO" "$BOT_DIR"
     cd "$BOT_DIR"
 
-    info "Install dependencies..."
-    npm install --omit=dev
-
     # Konfigurasi
     if [[ -f "$BOT_DIR/.env.example" ]]; then
         cp "$BOT_DIR/.env.example" "$BOT_DIR/.env"
@@ -231,18 +228,17 @@ cmd_botwa() {
         [[ "$EDIT_ENV" =~ ^[Yy]$ ]] && nano "$BOT_DIR/.env"
     fi
 
+    # Install dependencies (termasuk express untuk web dashboard)
+    info "Install dependencies..."
+    cd "$BOT_DIR" && npm install --omit=dev
+
     # Jalankan
     ask "Jalankan bot sekarang? (Y/n):"
     read -r RUN_NOW
     if [[ ! "$RUN_NOW" =~ ^[Nn]$ ]]; then
         cd "$BOT_DIR"
 
-        # Detect entry point
-        ENTRY="index.js"
-        [[ -f "src/index.js" ]] && ENTRY="src/index.js"
-        [[ -f "main.js" ]] && ENTRY="main.js"
-
-        pm2 start "$ENTRY" --name "bot-wa" \
+        pm2 start "src/index.js" --name "bot-wa" \
             --restart-delay=5000 \
             --max-restarts=10 \
             --log /root/.pm2/logs/bot-wa.log
@@ -260,10 +256,16 @@ cmd_botwa() {
 
     echo ""
     log "Bot WA berhasil diinstall!"
+    LOCAL_IP=$(hostname -I | awk '{print $1}')
+    echo ""
+    info "Web Dashboard: ${CYAN}http://${LOCAL_IP}:6789${NC}"
+    echo "  Manage skills, whitelist, API keys, settings"
+    echo ""
     info "Commands:"
-    echo "  pm2 logs bot-wa      → lihat log + QR code"
-    echo "  pm2 restart bot-wa   → restart bot"
-    echo "  pm2 stop bot-wa      → stop bot"
+    echo "  pm2 logs bot-wa         → lihat log + QR code"
+    echo "  pm2 restart bot-wa      → restart bot"
+    echo "  pm2 stop bot-wa         → stop bot"
+    echo "  http://<ip>:6789        → Web Dashboard"
 }
 
 # ── Command: tunnel ────────────────────────────────────────
