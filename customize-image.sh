@@ -144,13 +144,6 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 export LANG=C.UTF-8
 
-echo "--- Konfigurasi ZRAM ---"
-cat > /etc/default/zramswap << 'ZRAM'
-ALGO=lz4
-PERCENT=50
-ZRAM
-# enable via thirtyos-install optimize di first-boot
-
 echo "--- Konfigurasi tmpfs /tmp ---"
 if ! grep -q "tmpfs /tmp" /etc/fstab; then
     echo "tmpfs /tmp tmpfs defaults,noatime,nosuid,nodev,size=64M 0 0" >> /etc/fstab
@@ -238,6 +231,22 @@ if grep -q "^PrintMotd no" /etc/ssh/sshd_config; then
     sed -i 's/^PrintMotd no/PrintMotd yes/' /etc/ssh/sshd_config
     echo "PrintMotd diaktifkan"
 fi
+
+echo "--- ZRAM boot service ---"
+cat > /etc/systemd/system/zram-swap.service << 'ZRAMSVC'
+[Unit]
+Description=ZRAM swap setup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'if ! grep -q zram /proc/swaps 2>/dev/null; then modprobe zram 2>/dev/null; echo lz4 > /sys/block/zram0/comp_algorithm 2>/dev/null; total=$(awk "/MemTotal/{print \$2}" /proc/meminfo 2>/dev/null || echo 0); [ "$total" -gt 0 ] && size=$((total * 50 / 100 * 1024)) || size=512M; echo "$size" > /sys/block/zram0/disksize 2>/dev/null; mkswap /dev/zram0 2>/dev/null; swapon /dev/zram0 2>/dev/null; fi'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+ZRAMSVC
+systemctl enable zram-swap.service 2>/dev/null || true
 
 echo "--- Buat file versi ThirtyOS ---"
 cat > /etc/thirtyos-release << RELEASE

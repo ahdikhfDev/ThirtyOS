@@ -155,9 +155,17 @@ NMPROFILE
 
     # ZRAM
     info "Mengaktifkan ZRAM swap..."
-    if command -v zramswap &>/dev/null; then
-        systemctl enable --now zramswap 2>/dev/null || true
-        log "ZRAM aktif"
+    if ! grep -q zram /proc/swaps 2>/dev/null; then
+        modprobe zram 2>/dev/null || true
+        echo lz4 > /sys/block/zram0/comp_algorithm 2>/dev/null || true
+        total=$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+        [[ "$total" -gt 0 ]] && size=$((total * 50 / 100 * 1024)) || size=512M
+        echo "$size" > /sys/block/zram0/disksize 2>/dev/null || true
+        mkswap /dev/zram0 2>/dev/null || true
+        swapon /dev/zram0 2>/dev/null || true
+        log "ZRAM swap aktif (50% RAM)"
+    else
+        log "ZRAM swap sudah aktif"
     fi
 
     echo ""
@@ -522,6 +530,24 @@ SVC
     systemctl enable thirtyos-motd.service 2>/dev/null || true
     log "MOTD systemd service aktif"
 
+    info "Setup ZRAM boot service..."
+    cat > /etc/systemd/system/zram-swap.service << 'ZRAMSVC'
+[Unit]
+Description=ZRAM swap setup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'if ! grep -q zram /proc/swaps 2>/dev/null; then modprobe zram 2>/dev/null; echo lz4 > /sys/block/zram0/comp_algorithm 2>/dev/null; total=$(awk "/MemTotal/{print \$2}" /proc/meminfo 2>/dev/null || echo 0); [ "$total" -gt 0 ] && size=$((total * 50 / 100 * 1024)) || size=512M; echo "$size" > /sys/block/zram0/disksize 2>/dev/null; mkswap /dev/zram0 2>/dev/null; swapon /dev/zram0 2>/dev/null; fi'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+ZRAMSVC
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl enable zram-swap.service 2>/dev/null || true
+    log "ZRAM boot service aktif"
+
     log "Update selesai!"
 }
 
@@ -563,7 +589,7 @@ cmd_status() {
 
     # Services
     echo -e "${CYAN}── System Services ───────────────────${NC}"
-    for svc in cloudflared docker zramswap ssh; do
+    for svc in cloudflared docker ssh; do
         STATUS=$(systemctl is-active "$svc" 2>/dev/null || echo "not-found")
         if [[ "$STATUS" == "active" ]]; then
             echo -e "  ${GREEN}●${NC} $svc"
@@ -678,13 +704,23 @@ cmd_prepare() {
     info "Install system packages..."
     apt-get install -y --no-install-recommends \
         nano htop \
-        zram-tools \
         unzip zip \
         net-tools \
         jq 2>/dev/null || true
 
     info "Setup ZRAM..."
-    systemctl enable --now zramswap 2>/dev/null || true
+    if ! grep -q zram /proc/swaps 2>/dev/null; then
+        modprobe zram 2>/dev/null || true
+        echo lz4 > /sys/block/zram0/comp_algorithm 2>/dev/null || true
+        total=$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+        [[ "$total" -gt 0 ]] && size=$((total * 50 / 100 * 1024)) || size=512M
+        echo "$size" > /sys/block/zram0/disksize 2>/dev/null || true
+        mkswap /dev/zram0 2>/dev/null || true
+        swapon /dev/zram0 2>/dev/null || true
+        log "ZRAM swap aktif"
+    else
+        log "ZRAM swap sudah aktif"
+    fi
 
     info "Clone bot-wa..."
     if [[ ! -d /opt/bot-wa ]]; then
@@ -807,21 +843,18 @@ cmd_optimize() {
     do_optimize_all() {
         echo ""
 
-        info "1/8 — Fix & aktifkan ZRAM swap..."
-        if ! lsmod | grep -q zram; then
+        info "1/8 — Setup ZRAM swap..."
+        if ! grep -q zram /proc/swaps 2>/dev/null; then
             modprobe zram 2>/dev/null || true
-        fi
-        if ! command -v zramswap &>/dev/null; then
-            apt-get install -y zram-tools 2>/dev/null || true
-        fi
-        if [[ -f /etc/default/zramswap ]]; then
-            systemctl enable --now zramswap 2>/dev/null || true
-        fi
-        sleep 1
-        if zramctl 2>/dev/null | grep -q zram; then
-            log "ZRAM: $(zramctl 2>/dev/null | grep -v NAME | awk '{print $3, "/", $2}')"
+            echo lz4 > /sys/block/zram0/comp_algorithm 2>/dev/null || true
+            total=$(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+            [[ "$total" -gt 0 ]] && size=$((total * 50 / 100 * 1024)) || size=512M
+            echo "$size" > /sys/block/zram0/disksize 2>/dev/null || true
+            mkswap /dev/zram0 2>/dev/null || true
+            swapon /dev/zram0 2>/dev/null || true
+            log "ZRAM: $(free -m | awk '/Swap/{printf "%dMB total", $2}')"
         else
-            warn "ZRAM gagal, cek: dmesg | grep zram"
+            log "ZRAM swap sudah aktif: $(zramctl 2>/dev/null | grep -v NAME | awk '{print $3, "/", $2}')"
         fi
 
         info "2/8 — Matikan journal persistent (log di RAM)..."
