@@ -126,12 +126,14 @@ cmd_setup() {
 
         if [[ -z "$IP_ADDR" || -z "$GATEWAY" ]]; then
             warn "IP Address dan Gateway wajib diisi. Static IP dibatalkan."
+        elif [[ ! "$IFACE" =~ ^[a-zA-Z0-9._-]{2,20}$ ]]; then
+            warn "Nama interface tidak valid: $IFACE. Static IP dibatalkan."
         else
             # Hapus netplan config kalo ada (biar gak conflict)
             rm -f /etc/netplan/01-thirtyos-static.yaml 2>/dev/null || true
             # Pake NM connection profile
             UUID=$(uuidgen 2>/dev/null || echo "thirty-$(date +%s)")
-            cat > /etc/NetworkManager/system-connections/${IFACE}.nmconnection << NMPROFILE
+            cat > "/etc/NetworkManager/system-connections/${IFACE}.nmconnection" << NMPROFILE
 [connection]
 id=${IFACE}
 uuid=${UUID}
@@ -174,7 +176,7 @@ NMPROFILE
 }
 
 # ── Command: bot-wa ────────────────────────────────────────
-cmd_botwа() {
+cmd_botwa() {
     check_root "bot-wa"
     BOT_DIR="/opt/bot-wa"
     BOT_REPO="https://github.com/ahdikhfDev/bot-wa"
@@ -442,8 +444,14 @@ cmd_update() {
     echo ""
 
     info "Update sistem..."
-    apt-get update -qq && apt-get upgrade -y
-    log "Sistem terupdate"
+    ask "Jalankan apt upgrade? (y/N):"
+    read -r DO_UPGRADE
+    if [[ "$DO_UPGRADE" =~ ^[Yy]$ ]]; then
+        apt-get update -qq && apt-get upgrade -y
+        log "Sistem terupdate"
+    else
+        info "apt upgrade dilewati"
+    fi
 
     info "Update npm global packages..."
     npm update -g 2>/dev/null || true
@@ -451,10 +459,16 @@ cmd_update() {
 
     info "Update bot-wa..."
     if [[ -d /opt/bot-wa ]]; then
-        pm2 stop bot-wa 2>/dev/null || true
-        cd /opt/bot-wa && git pull && npm install --omit=dev
-        pm2 restart bot-wa 2>/dev/null || true
-        log "bot-wa terupdate"
+        ask "Update bot-wa? (y/N):"
+        read -r UPDATE_BOTWA
+        if [[ "$UPDATE_BOTWA" =~ ^[Yy]$ ]]; then
+            pm2 stop bot-wa 2>/dev/null || true
+            cd /opt/bot-wa && git pull && npm install --omit=dev
+            pm2 restart bot-wa 2>/dev/null || true
+            log "bot-wa terupdate"
+        else
+            info "bot-wa tidak diupdate"
+        fi
     else
         warn "bot-wa belum diinstall, skip"
     fi
@@ -841,9 +855,7 @@ cmd_optimize() {
     ask "Pilih (1/2):"
     read -r OPT_CHOICE
 
-    do_optimize_all() {
-        echo ""
-
+        do_zram() {
         info "1/8 — Setup ZRAM swap..."
         if ! grep -q zram /proc/swaps 2>/dev/null; then
             modprobe zram 2>/dev/null || true
@@ -857,7 +869,9 @@ cmd_optimize() {
         else
             log "ZRAM swap sudah aktif: $(zramctl 2>/dev/null | grep -v NAME | awk '{print $3, "/", $2}')"
         fi
+    }
 
+    do_journal() {
         info "2/8 — Matikan journal persistent (log di RAM)..."
         journalctl --vacuum-size=10M 2>/dev/null || true
         cat > /etc/systemd/journald.conf << 'JOURNAL'
@@ -868,12 +882,16 @@ ForwardToSyslog=no
 JOURNAL
         systemctl restart systemd-journald 2>/dev/null || true
         log "Journal pindah ke RAM (50MB max)"
+    }
 
+    do_swappiness() {
         info "3/8 — Turunin swappiness..."
         echo "vm.swappiness=10" > /etc/sysctl.d/90-swappiness.conf
         sysctl -w vm.swappiness=10 2>/dev/null || true
         log "Swappiness: 10"
+    }
 
+    do_iosched() {
         info "4/8 — IO Scheduler buat SSD..."
         for disk in /sys/block/sd* /sys/block/nvme*; do
             [[ -f "$disk/queue/scheduler" ]] && \
@@ -884,7 +902,9 @@ ACTION=="add|change", KERNEL=="sd*", ATTR{queue/scheduler}="none"
 ACTION=="add|change", KERNEL=="nvme*", ATTR{queue/scheduler}="none"
 UDEV
         log "IO Scheduler: none (NVMe) / none (SSD)"
+    }
 
+    do_cpugovernor() {
         info "5/8 — CPU governor: schedutil..."
         for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
             echo "schedutil" > "$cpu" 2>/dev/null || true
@@ -893,7 +913,9 @@ UDEV
 ACTION=="add", SUBSYSTEM=="cpu", RUN+="/bin/sh -c 'echo schedutil > /sys/devices/system/cpu/cpu%n/cpufreq/scaling_governor'"
 CPUFREQ
         log "CPU Governor: schedutil"
+    }
 
+    do_networkmanager() {
         info "6/8 — Cek NetworkManager..."
         wifi_iface=$(nmcli -t -f TYPE,DEVICE device status 2>/dev/null | grep "^wifi" | cut -d: -f2 | head -1)
         if systemctl is-active NetworkManager &>/dev/null; then
@@ -910,14 +932,18 @@ CPUFREQ
         else
             log "NetworkManager sudah nonaktif"
         fi
+    }
 
+    do_cleanup() {
         info "7/8 — Bersihin cache & package ga kepake..."
         apt-get clean 2>/dev/null || true
         apt-get autoremove --purge -y 2>/dev/null || true
         rm -rf /var/lib/apt/lists/* 2>/dev/null || true
         rm -rf /tmp/* 2>/dev/null || true
         log "Cache & orphans dibersihkan"
+    }
 
+    do_disablesvc() {
         info "8/8 — Disable service ga penting..."
         for svc in cups-browsed cups bluetooth avahi-daemon ModemManager \
                    apt-daily apt-daily-upgrade whoopsie pppd-dns \
@@ -926,7 +952,17 @@ CPUFREQ
             systemctl mask $svc 2>/dev/null || true
         done
         log "Service ga penting di-mask"
+    }
 
+    do_optimize_all() {
+        do_zram
+        do_journal
+        do_swappiness
+        do_iosched
+        do_cpugovernor
+        do_networkmanager
+        do_cleanup
+        do_disablesvc
         echo ""
         log "${BOLD}Optimasi selesai! RAM & storage lebih efisien.${NC}"
         info "Reboot disarankan: sudo reboot"
@@ -936,18 +972,24 @@ CPUFREQ
         1|"") do_optimize_all ;;
         2)
             echo ""
-            for opt in \
-                "journal persistent -> RAM" \
-                "swappiness 10" \
-                "IO scheduler none" \
-                "CPU governor schedutil" \
-                "Matikan NetworkManager" \
-                "Bersihin cache" \
-                "Disable service ga penting"; do
-                ask "Jalankan: $opt? (y/N):"
+            for step in \
+                "ZRAM swap:do_zram" \
+                "Journal ke RAM:do_journal" \
+                "Swappiness 10:do_swappiness" \
+                "IO scheduler none:do_iosched" \
+                "CPU governor schedutil:do_cpugovernor" \
+                "Matikan NetworkManager:do_networkmanager" \
+                "Bersihin cache:do_cleanup" \
+                "Disable service ga penting:do_disablesvc"; do
+                label="${step%%:*}"
+                func="${step##*:}"
+                ask "Jalankan: $label? (y/N):"
                 read -r ANSWER
-                [[ "$ANSWER" =~ ^[Yy]$ ]] && do_optimize_all
+                [[ "$ANSWER" =~ ^[Yy]$ ]] && $func
             done
+            echo ""
+            log "${BOLD}Optimasi custom selesai!${NC}"
+            info "Reboot disarankan: sudo reboot"
             ;;
         *) err "Pilihan tidak valid" ;;
     esac
@@ -1143,23 +1185,13 @@ SVC9R
 
     # Cek apakah ada opencode.json
     OC_CONFIG="$OPENCODE_CONFIG_DIR/config.json"
-    cat > "$OC_CONFIG" << 'OCCFG'
+    cat > "$OC_CONFIG" << OCCFG
 {
-  "model": {
-    "provider": "opencode",
-    "model": "opencode-free"
-  },
-  "api": {
-    "baseUrl": "http://localhost:20128/v1",
-    "model": "gpt-4o-mini"
-  },
-  "mode": "headless",
-  "telemetry": false,
-  "autoUpdate": true
+  "model": "opencode-free"
 }
 OCCFG
     chown -R $(stat -c '%u:%g' "$OPENCODE_CONFIG_DIR/.." 2>/dev/null || true) "$OPENCODE_CONFIG_DIR" 2>/dev/null || true
-    log "OpenCode dikonfigurasi (endpoint: localhost:20128/v1)"
+    log "OpenCode dikonfigurasi (model: opencode-free)"
 
     # ── Info dashboard ──
     echo ""
@@ -1389,7 +1421,7 @@ SVC
 case "${1:-help}" in
     setup)     cmd_setup ;;
     ai)        cmd_ai "$@" ;;
-    bot-wa)    cmd_botwа ;;
+    bot-wa)    cmd_botwa ;;
     tunnel)    cmd_tunnel ;;
     panel)     cmd_panel ;;
     media)     cmd_media ;;

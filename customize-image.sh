@@ -39,7 +39,7 @@ INPUT_IMAGE="$1"
 # ── Config ─────────────────────────────────────────────────
 VERSION="1.0.0"
 OUTPUT_IMAGE="ThirtyOS_v${VERSION}_HG680P.img"
-WORK_DIR="/home/thirty/thirtyos-build"
+WORK_DIR="$(dirname "$(realpath "$0")")/thirtyos-build"
 MOUNT_DIR="${WORK_DIR}/mount"
 BOT_WA_REPO="https://github.com/ahdikhfDev/bot-wa"
 
