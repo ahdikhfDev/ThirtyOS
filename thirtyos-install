@@ -1223,8 +1223,6 @@ OCCFG
 }
 
 cmd_ai_status() {
-    echo ""
-    echo ""
     echo -e "${CYAN}── 9Router ────────────────────────────${NC}"
     if command -v 9router &>/dev/null; then
         echo -e "  Installed : $(9router --version 2>/dev/null || echo 'yes')"
@@ -1301,7 +1299,7 @@ cmd_ai_web() {
     OC_PORT="${OC_PORT:-4096}"
     OC_PASS_FILE="/etc/opencode-web.pass"
     if [[ -z "${OC_PASS}" && -f "$OC_PASS_FILE" ]]; then
-        OC_PASS=$(cat "$OC_PASS_FILE")
+        OC_PASS=$(grep '^OPENCODE_SERVER_PASSWORD=' "$OC_PASS_FILE" | cut -d= -f2-)
     fi
     OC_PASS="${OC_PASS:-$(openssl rand -hex 8)}"
     echo "OPENCODE_SERVER_PASSWORD=${OC_PASS}" > "$OC_PASS_FILE"
