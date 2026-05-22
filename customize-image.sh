@@ -112,7 +112,7 @@ trap cleanup_mount EXIT
 
 # ── Download thirtyos-install dari GitHub ─────────────────
 info "Download thirtyos-install dari GitHub..."
-THIRTYOS_INSTALL_URL="https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS-tools/main/thirtyos-install"
+THIRTYOS_INSTALL_URL="https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS/main/thirtyos-install"
 if curl -fsSL "$THIRTYOS_INSTALL_URL" -o "$MOUNT_DIR/usr/local/bin/thirtyos-install" 2>/dev/null; then
     chmod +x "$MOUNT_DIR/usr/local/bin/thirtyos-install"
     log "thirtyos-install terdownload dari GitHub"

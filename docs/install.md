@@ -22,7 +22,7 @@ sudo resize2fs /dev/sdX2
 If you already have Armbian running on your HG680P, jalankan perintah ini **sekali** untuk download `thirtyos-install`:
 
 ```bash
-sudo curl -fsSL -o /usr/local/bin/thirtyos-install https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS-tools/main/thirtyos-install && sudo chmod +x /usr/local/bin/thirtyos-install
+sudo curl -fsSL -o /usr/local/bin/thirtyos-install https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS/main/thirtyos-install && sudo chmod +x /usr/local/bin/thirtyos-install
 ```
 
 **Setelah itu**, update ke versi terbaru:

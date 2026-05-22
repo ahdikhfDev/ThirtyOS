@@ -33,7 +33,7 @@ thirtyos-install optimize
 Already running Armbian? Just download the tool:
 
 ```bash
-sudo curl -fsSL -o /usr/local/bin/thirtyos-install https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS-tools/main/thirtyos-install
+sudo curl -fsSL -o /usr/local/bin/thirtyos-install https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS/main/thirtyos-install
 sudo chmod +x /usr/local/bin/thirtyos-install
 thirtyos-install update
 ```
@@ -54,7 +54,7 @@ thirtyos-install update
 ## Repository Structure
 
 ```
-ThirtyOS-tools/
+ThirtyOS/
 ├── docs/                 # Documentation
 ├── customize-image.sh    # Build script (run on laptop/PC)
 ├── thirtyos-install      # CLI tool (runs on STB, bundled in image)
@@ -78,4 +78,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Issues & Feedback
 
-Report issues at: https://github.com/ahdikhfDev/ThirtyOS-tools/issues
+Report issues at: https://github.com/ahdikhfDev/ThirtyOS/issues

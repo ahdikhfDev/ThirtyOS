@@ -10,8 +10,8 @@ sudo apt install -y qemu-user-static parted e2fsprogs curl
 ## Build
 
 ```bash
-git clone https://github.com/ahdikhfDev/ThirtyOS-tools.git
-cd ThirtyOS-tools
+git clone https://github.com/ahdikhfDev/ThirtyOS.git
+cd ThirtyOS
 
 # Download Armbian base image:
 # https://www.armbian.com/amlogic-s905x/

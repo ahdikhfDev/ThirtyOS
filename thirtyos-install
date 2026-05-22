@@ -477,7 +477,7 @@ cmd_update() {
     fi
 
     info "Update thirtyos-install..."
-    curl -fsSL https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS-tools/main/thirtyos-install \
+    curl -fsSL https://raw.githubusercontent.com/ahdikhfDev/ThirtyOS/main/thirtyos-install \
         -o /usr/local/bin/thirtyos-install && chmod +x /usr/local/bin/thirtyos-install
     log "thirtyos-install terupdate"
 
